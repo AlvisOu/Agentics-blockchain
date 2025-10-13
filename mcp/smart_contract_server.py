@@ -20,7 +20,18 @@ mcp = FastMCP("SmartContract")
 
 @mcp.tool()
 def pay_deposit() -> dict:
-    """Pay the security deposit to the contract."""
+    """
+    Tenant action.
+
+    Pays the **security deposit** into the RentalAgreement contract.
+    - Must be called once by the tenant before any rent payments.
+    - Fails if the deposit was already paid.
+    - Sends exactly `securityDeposit` wei from the tenant's account.
+
+    Returns:
+        dict: {"tx_hash": "<transaction hash>"} if successful
+              {"error": "<error message>"} if failed
+    """
     try:
         tx = contract.functions.payDeposit().build_transaction({
             "from": account.address,
@@ -37,7 +48,21 @@ def pay_deposit() -> dict:
 
 @mcp.tool()
 def pay_rent(month: int) -> dict:
-    """Pay rent for a specific month."""
+    """
+    Tenant action.
+
+    Pays **monthly rent** for a given month number.
+    - Requires that deposit has already been paid.
+    - Amount must exactly equal `monthlyRent` (retrieved from the contract).
+    - Month = 1 for the first month, 2 for the second, etc.
+
+    Args:
+        month (int): Month number for which rent is being paid.
+
+    Returns:
+        dict: {"tx_hash": "<transaction hash>"} if successful
+              {"error": "<error message>"} if failed
+    """
     try:
         tx = contract.functions.payRent(month).build_transaction({
             "from": account.address,
@@ -55,7 +80,20 @@ def pay_rent(month: int) -> dict:
 
 @mcp.tool()
 def confirm_rent(month: int) -> dict:
-    """Confirm rent payment for a specific month."""
+    """
+    Landlord action.
+
+    Confirms that rent for a given month was received.
+    - Can only be called by the landlord account.
+    - Requires that rent has been paid but not yet confirmed.
+
+    Args:
+        month (int): Month number being confirmed.
+
+    Returns:
+        dict: {"tx_hash": "<transaction hash>"} if successful
+              {"error": "<error message>"} if failed
+    """
     try:
         tx = contract.functions.confirmRent(month).build_transaction({
             "from": account.address,
@@ -71,7 +109,20 @@ def confirm_rent(month: int) -> dict:
 
 @mcp.tool()
 def transfer_address(new_landlord: str) -> dict:
-    """Transfer landlord address to a new address."""
+    """
+    Landlord action.
+
+    Transfers landlord rights to a new Ethereum address.
+    - Can only be called by the current landlord.
+    - Useful for demo: shows ownership change.
+
+    Args:
+        new_landlord (str): Ethereum address of the new landlord.
+
+    Returns:
+        dict: {"tx_hash": "<transaction hash>"} if successful
+              {"error": "<error message>"} if failed
+    """
     try:
         tx = contract.functions.transferAddress(Web3.to_checksum_address(new_landlord)).build_transaction({
             "from": account.address,
@@ -87,7 +138,17 @@ def transfer_address(new_landlord: str) -> dict:
 
 @mcp.tool()
 def contract_status() -> dict:
-    """Get the current status of the contract."""
+    """
+    Neutral action (no ETH spent).
+
+    Fetches current state of the RentalAgreement contract.
+    Includes landlord/tenant addresses, monthly rent, security deposit,
+    lease start date, property address, and whether deposit is paid.
+
+    Returns:
+        dict: All relevant contract state values
+              {"error": "<error message>"} if failed
+    """
     try:
         return {
             "landlord": contract.functions.landlord().call(),
