@@ -1,7 +1,7 @@
 import os
 from web3 import Web3
 from dotenv import load_dotenv
-from fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP
 
 load_dotenv()
 
