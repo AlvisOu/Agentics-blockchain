@@ -1,0 +1,39 @@
+{
+  "parties": [
+    {
+      "name": "Landlord",
+      "role": "landlord",
+      "address": null
+    },
+    {
+      "name": "Tenant",
+      "role": "tenant",
+      "address": null
+    }
+  ],
+  "monetary_amounts": [
+    {
+      "amount": 1.0,
+      "currency": "ETH",
+      "purpose": "rent"
+    },
+    {
+      "amount": 2.0,
+      "currency": "ETH",
+      "purpose": "deposit"
+    }
+  ],
+  "dates": [
+    {
+      "date_type": "payment_due",
+      "value": null,
+      "day_of_month": 1
+    }
+  ],
+  "property_details": {
+    "address": "123 Main St",
+    "additional_info": null
+  },
+  "additional_terms": [],
+  "contract_type": "rental_agreement"
+}

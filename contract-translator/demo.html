@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Contract Translator Demo</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    const icons = {
+      upload: () => <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-4 text-gray-400" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+      loader: () => <svg xmlns="http://www.w3.org/2000/svg" className="animate-spin mx-auto mb-4 text-indigo-600" width="48" height="48" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" strokeOpacity="0.25"/><path d="M22 12a10 10 0 0 1-10 10" /></svg>,
+      check: () => <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 text-green-600" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12" /></svg>,
+      file: () => <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 text-indigo-600" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 2h10l6 6v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><polyline points="14 2 14 8 20 8"/></svg>
+    };
+
+    function ContractTranslator() {
+      const [step, setStep] = useState(1);
+      const [file, setFile] = useState(null);
+      const [contractText, setContractText] = useState('');
+      const [solidityCode, setSolidityCode] = useState('');
+      const [abiFile, setAbiFile] = useState('');
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState('');
+
+      const handleFileUpload = (e) => {
+        const uploadedFile = e.target.files[0];
+        if (!uploadedFile) return;
+        setFile(uploadedFile);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setContractText(event.target.result);
+          setStep(2);
+        };
+        reader.readAsText(uploadedFile);
+      };
+
+      const generateSmartContract = async () => {
+        setLoading(true);
+        setError('');
+        setStep(3);
+
+        await new Promise(res => setTimeout(res, 1500));
+
+        const mockSolidity = `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract RentalAgreement {
+    address public landlord;
+    address public tenant;
+    uint public rent;
+    uint public deposit;
+
+    constructor(address _tenant, uint _rent, uint _deposit) {
+        landlord = msg.sender;
+        tenant = _tenant;
+        rent = _rent;
+        deposit = _deposit;
+    }
+
+    event RentPaid(address indexed tenant, uint amount);
+
+    function payRent() external payable {
+        require(msg.sender == tenant, "Only tenant can pay rent");
+        require(msg.value == rent, "Incorrect rent amount");
+        emit RentPaid(msg.sender, msg.value);
+    }
+}`;
+        setSolidityCode(mockSolidity);
+        setStep(4);
+
+        await new Promise(res => setTimeout(res, 1000));
+        const mockAbi = JSON.stringify([
+          {
+            "inputs": [
+              { "internalType": "address", "name": "_tenant", "type": "address" },
+              { "internalType": "uint256", "name": "_rent", "type": "uint256" },
+              { "internalType": "uint256", "name": "_deposit", "type": "uint256" }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+          },
+          {
+            "inputs": [],
+            "name": "payRent",
+            "outputs": [],
+            "stateMutability": "payable",
+            "type": "function"
+          },
+          {
+            "anonymous": false,
+            "inputs": [
+              { "indexed": true, "internalType": "address", "name": "tenant", "type": "address" },
+              { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
+            ],
+            "name": "RentPaid",
+            "type": "event"
+          }
+        ], null, 2);
+        setAbiFile(mockAbi);
+        setStep(5);
+        setLoading(false);
+      };
+
+      const downloadFile = (content, filename) => {
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      const reset = () => {
+        setStep(1);
+        setFile(null);
+        setContractText('');
+        setSolidityCode('');
+        setAbiFile('');
+        setError('');
+      };
+
+      return (
+        <div className="min-h-screen flex items-center justify-center py-10">
+          <div className="max-w-5xl w-full bg-white rounded-2xl shadow-lg p-8">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">Smart Contract Translator</h1>
+              <p className="text-gray-600">Convert plain contracts to Solidity with ABI</p>
+            </div>
+
+            {/* Step indicators */}
+            <div className="flex justify-between mb-10">
+              {["Upload", "Review", "Generate", "Solidity", "ABI"].map((label, i) => {
+                const num = i + 1;
+                return (
+                  <div key={num} className="flex flex-col items-center flex-1">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold mb-2 transition-all ${step >= num ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-600"}`}>{num}</div>
+                    <span className={`text-sm ${step >= num ? "text-indigo-600 font-medium" : "text-gray-500"}`}>{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
+
+            {/* Step 1 */}
+            {step === 1 && (
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-indigo-400 transition-colors">
+                {icons.upload()}
+                <h3 className="text-xl font-semibold mb-2">Upload Your Contract</h3>
+                <p className="text-gray-600 mb-6">PDF or TXT supported</p>
+                <label className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 cursor-pointer">
+                  Choose File
+                  <input type="file" accept=".txt" onChange={handleFileUpload} className="hidden" />
+                </label>
+              </div>
+            )}
+
+            {/* Step 2 */}
+            {step === 2 && (
+              <div>
+                <h3 className="text-xl font-semibold mb-4 flex items-center">{icons.file()}Review Contract Text</h3>
+                <textarea value={contractText} onChange={(e) => setContractText(e.target.value)} className="w-full h-64 p-4 border border-gray-300 rounded-lg font-mono text-sm mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+                <div className="flex gap-4">
+                  <button onClick={generateSmartContract} className="flex-1 px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700">Generate Smart Contract</button>
+                  <button onClick={reset} className="px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300">Reset</button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3 */}
+            {step === 3 && loading && (
+              <div className="text-center py-12">
+                {icons.loader()}
+                <h3 className="text-xl font-semibold mb-2">Generating Smart Contract...</h3>
+                <p className="text-gray-600">Please wait</p>
+              </div>
+            )}
+
+            {/* Step 4 */}
+            {step >= 4 && solidityCode && (
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold mb-4 flex items-center">{icons.check()}Generated Solidity Contract</h3>
+                <textarea value={solidityCode} readOnly className="w-full h-64 p-4 border border-gray-300 rounded-lg font-mono text-sm bg-gray-50 mb-4" />
+                <button onClick={() => downloadFile(solidityCode, 'contract.sol')} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Download .sol File</button>
+              </div>
+            )}
+
+            {/* Step 5 */}
+            {step === 5 && abiFile && (
+              <div>
+                <h3 className="text-xl font-semibold mb-4 flex items-center">{icons.check()}Generated ABI File</h3>
+                <textarea value={abiFile} readOnly className="w-full h-64 p-4 border border-gray-300 rounded-lg font-mono text-sm bg-gray-50 mb-4" />
+                <div className="flex gap-4">
+                  <button onClick={() => downloadFile(abiFile, 'contract.abi.json')} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Download .abi.json</button>
+                  <button onClick={reset} className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Translate Another Contract</button>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-6">
+              <h4 className="font-semibold text-blue-900 mb-2">How it works:</h4>
+              <ol className="text-sm text-blue-800 space-y-1">
+                <li>1. Upload your natural language contract (TXT)</li>
+                <li>2. Review and edit the extracted text if needed</li>
+                <li>3. AI generates a complete Solidity smart contract</li>
+                <li>4. AI creates the ABI file for deployment</li>
+                <li>5. Download both files for use</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<ContractTranslator />);
+  </script>
+</body>
+</html>

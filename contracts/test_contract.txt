@@ -1,0 +1,7 @@
+
+Simple Rental Agreement
+
+This agreement is between Jane Smith (landlord) and John Doe (tenant).
+The tenant agrees to pay 2 ETH for rent at 123 Main Street.
+Security deposit is 4 ETH.
+Lease starts February 1, 2025.
